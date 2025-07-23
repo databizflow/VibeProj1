@@ -1,11 +1,18 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import requests
 from datetime import datetime, timedelta
+
+# plotly import with fallback
+try:
+    import plotly.express as px
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+    st.warning("Plotly가 설치되지 않았습니다. 차트 기능이 제한됩니다.")
 
 # 다른 모듈들 import
 try:
@@ -157,11 +164,14 @@ if st.button("🚀 분석 시작하기", type="primary", use_container_width=Tru
             '수확량(kg)': adjusted_yields
         })
         
-        fig = px.line(chart_data, x='월', y='수확량(kg)', 
-                     title="월별 예상 수확량 변화",
-                     markers=True)
-        fig.update_traces(line_color='#10B981', line_width=3)
-        st.plotly_chart(fig, use_container_width=True)
+        if PLOTLY_AVAILABLE:
+            fig = px.line(chart_data, x='월', y='수확량(kg)', 
+                         title="월별 예상 수확량 변화",
+                         markers=True)
+            fig.update_traces(line_color='#10B981', line_width=3)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.line_chart(chart_data.set_index('월'))
     
     with col2:
         st.write("**환경 조건 최적화 현황**")
@@ -170,36 +180,45 @@ if st.button("🚀 분석 시작하기", type="primary", use_container_width=Tru
         current_values = [92, 88, 95, 85, 90, 87]
         optimal_values = [100, 100, 100, 100, 100, 100]
         
-        fig = go.Figure()
-        
-        fig.add_trace(go.Scatterpolar(
-            r=current_values,
-            theta=categories,
-            fill='toself',
-            name='현재 수준',
-            line_color='#3B82F6'
-        ))
-        
-        fig.add_trace(go.Scatterpolar(
-            r=optimal_values,
-            theta=categories,
-            fill='toself',
-            name='최적 수준',
-            line_color='#EF4444',
-            line_dash='dash'
-        ))
-        
-        fig.update_layout(
-            polar=dict(
-                radialaxis=dict(
-                    visible=True,
-                    range=[0, 100]
-                )),
-            showlegend=True,
-            title="환경 조건 최적화 현황"
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        if PLOTLY_AVAILABLE:
+            fig = go.Figure()
+            
+            fig.add_trace(go.Scatterpolar(
+                r=current_values,
+                theta=categories,
+                fill='toself',
+                name='현재 수준',
+                line_color='#3B82F6'
+            ))
+            
+            fig.add_trace(go.Scatterpolar(
+                r=optimal_values,
+                theta=categories,
+                fill='toself',
+                name='최적 수준',
+                line_color='#EF4444',
+                line_dash='dash'
+            ))
+            
+            fig.update_layout(
+                polar=dict(
+                    radialaxis=dict(
+                        visible=True,
+                        range=[0, 100]
+                    )),
+                showlegend=True,
+                title="환경 조건 최적화 현황"
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            # plotly가 없을 때 대체 표시
+            env_data = pd.DataFrame({
+                '환경요소': categories,
+                '현재수준': current_values,
+                '최적수준': optimal_values
+            })
+            st.bar_chart(env_data.set_index('환경요소'))
     
     # 작물별 수익성 비교
     st.subheader("🔍 작물별 수익성 비교")
