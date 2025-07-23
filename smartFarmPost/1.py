@@ -207,14 +207,14 @@ if st.button("🚀 분석 시작하기", type="primary", use_container_width=Tru
     comparison_data = {
         "작물": ["완숙토마토", "딸기", "파프리카"],
         "예상수익(만원)": [8820, 7350, 6890],
-        "㎡당수익(원)": [3600, 3000, 2800],
+        "단위면적수익(원)": [3600, 3000, 2800],
         "수익성(%)": [92, 76, 72]
     }
     
     # 시설별 보정 적용
     for i in range(len(comparison_data["예상수익(만원)"])):
         comparison_data["예상수익(만원)"][i] = int(comparison_data["예상수익(만원)"][i] * multiplier)
-        comparison_data["㎡당수익(원)"][i] = int(comparison_data["㎡당수익(원)"][i] * multiplier)
+        comparison_data["단위면적수익(원)"][i] = int(comparison_data["단위면적수익(원)"][i] * multiplier)
     
     df_comparison = pd.DataFrame(comparison_data)
     
@@ -227,7 +227,7 @@ if st.button("🚀 분석 시작하기", type="primary", use_container_width=Tru
             <div style="border: 2px solid {color}; border-radius: 10px; padding: 20px; text-align: center; background-color: rgba(255,255,255,0.1);">
                 <h4>{row.작물}</h4>
                 <h2 style="color: {color};">{row.예상수익:,}만원</h2>
-                <p>㎡당 {row.㎡당수익:,}원</p>
+                <p>단위면적당 {row.단위면적수익:,}원</p>
                 <div style="background-color: lightgray; border-radius: 10px; height: 10px;">
                     <div style="background-color: {color}; height: 10px; border-radius: 10px; width: {row.수익성}%;"></div>
                 </div>
