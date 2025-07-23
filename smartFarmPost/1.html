@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌱 스마트팜 작물 재배 전략 분석 도구</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .progress-bar { transition: width 1s ease-in-out; }
+        .scenario-card { background: linear-gradient(145deg, #f0f9ff, #e0f2fe); }
+        .metric-card { background: linear-gradient(145deg, #f0fdf4, #dcfce7); }
+        .chart-container { height: 400px !important; }
+        .mini-chart { height: 200px !important; }
+        .glass-effect { background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.18); }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white">
+        <div class="container mx-auto px-6 py-8">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold mb-2">🌱 스마트팜 작물 재배 전략 분석 도구</h1>
+                <p class="text-xl opacity-90">작물 선택부터 수확량 예측까지, 데이터 기반 재배 전략 수립</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- 시나리오 선택 섹션 -->
+        <section class="mb-12">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">🎯 재배 목적을 선택해주세요</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="scenario-card rounded-xl p-6 card-hover cursor-pointer border-2 border-transparent hover:border-blue-400" onclick="selectScenario('new')">
+                    <div class="text-center">
+                        <i class="fas fa-seedling text-4xl text-green-600 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">🌱 신규 농장 계획</h3>
+                        <p class="text-gray-600">새로운 농장을 계획 중이시군요! 최적의 작물과 시설을 추천해드립니다.</p>
+                        <div class="mt-4 text-sm text-blue-600 font-medium">작물 선택 → 시설 유형 → 재배 시기 → 예상 수확량</div>
+                    </div>
+                </div>
+                <div class="scenario-card rounded-xl p-6 card-hover cursor-pointer border-2 border-transparent hover:border-blue-400" onclick="selectScenario('optimize')">
+                    <div class="text-center">
+                        <i class="fas fa-chart-line text-4xl text-blue-600 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">📊 기존 농장 최적화</h3>
+                        <p class="text-gray-600">기존 농장의 수확량을 늘려보세요! 개선점을 찾아드립니다.</p>
+                        <div class="mt-4 text-sm text-blue-600 font-medium">현재 작물 → 개선 요소 → 비교 분석 → 개선 제안</div>
+                    </div>
+                </div>
+                <div class="scenario-card rounded-xl p-6 card-hover cursor-pointer border-2 border-transparent hover:border-blue-400" onclick="selectScenario('compare')">
+                    <div class="text-center">
+                        <i class="fas fa-balance-scale text-4xl text-purple-600 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">🔍 작물 비교 분석</h3>
+                        <p class="text-gray-600">어떤 작물이 더 유리할지 비교해보세요! 수익성을 분석합니다.</p>
+                        <div class="mt-4 text-sm text-blue-600 font-medium">작물 A → 작물 B → 조건 설정 → 수익성 비교</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 선택된 시나리오 기반 입력 폼 -->
+        <section id="input-section" class="mb-12 hidden">
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">📝 재배 조건 설정</h2>
+                <div class="grid md:grid-cols-4 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">📍 재배 지역</label>
+                        <select id="location" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="updateAnalysis()">
+                            <option value="yongin">용인시 처인구</option>
+                            <option value="pyeongchang">평창</option>
+                            <option value="cheorwon">철원</option>
+                            <option value="other">기타 지역</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">🗓️ 재배 시작 시기</label>
+                        <select id="season" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="updateAnalysis()">
+                            <option value="july-end">7월 말</option>
+                            <option value="august-start">8월 초</option>
+                            <option value="september">9월</option>
+                            <option value="october">10월</option>
+                            <option value="november">11월</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">🏗️ 시설 유형</label>
+                        <select id="facility" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="updateAnalysis()">
+                            <option value="vinyl">비닐하우스</option>
+                            <option value="glass">유리온실</option>
+                            <option value="connected">연동하우스</option>
+                            <option value="single">단동하우스</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">🌱 주요 작물</label>
+                        <select id="crop" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="updateAnalysis()">
+                            <option value="tomato">완숙토마토</option>
+                            <option value="strawberry">딸기</option>
+                            <option value="paprika">파프리카</option>
+                            <option value="lettuce">상추</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <button onclick="runAnalysis()" class="w-full bg-gradient-to-r from-green-500 to-blue-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-green-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105">
+                        <i class="fas fa-chart-bar mr-2"></i>분석 시작하기
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 분석 결과 대시보드 -->
+        <section id="dashboard" class="mb-12 hidden">
+            <!-- 핵심 지표 카드 -->
+            <div class="grid md:grid-cols-4 gap-6 mb-8">
+                <div class="metric-card rounded-xl p-6 text-center">
+                    <i class="fas fa-chart-line text-3xl text-green-600 mb-3"></i>
+                    <h3 class="text-sm font-medium text-gray-600 mb-1">예상 수확량</h3>
+                    <p class="text-2xl font-bold text-gray-800" id="yield-metric">2,450kg</p>
+                    <p class="text-sm text-green-600 mt-1">전년 대비 +15%</p>
+                </div>
+                <div class="metric-card rounded-xl p-6 text-center">
+                    <i class="fas fa-dollar-sign text-3xl text-blue-600 mb-3"></i>
+                    <h3 class="text-sm font-medium text-gray-600 mb-1">예상 수익</h3>
+                    <p class="text-2xl font-bold text-gray-800" id="profit-metric">8,820만원</p>
+                    <p class="text-sm text-blue-600 mt-1">투자 대비 +28%</p>
+                </div>
+                <div class="metric-card rounded-xl p-6 text-center">
+                    <i class="fas fa-thermometer-half text-3xl text-orange-600 mb-3"></i>
+                    <h3 class="text-sm font-medium text-gray-600 mb-1">최적 환경 달성률</h3>
+                    <p class="text-2xl font-bold text-gray-800">92%</p>
+                    <p class="text-sm text-orange-600 mt-1">우수 수준</p>
+                </div>
+                <div class="metric-card rounded-xl p-6 text-center">
+                    <i class="fas fa-star text-3xl text-purple-600 mb-3"></i>
+                    <h3 class="text-sm font-medium text-gray-600 mb-1">재배 성공률</h3>
+                    <p class="text-2xl font-bold text-gray-800">87%</p>
+                    <p class="text-sm text-purple-600 mt-1">높은 성공 가능성</p>
+                </div>
+            </div>
+
+            <!-- 차트 섹션 -->
+            <div class="grid md:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">📈 월별 예상 수확량</h3>
+                    <canvas id="yieldChart" class="chart-container"></canvas>
+                </div>
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">🌡️ 환경 조건 최적화 현황</h3>
+                    <canvas id="environmentChart" class="chart-container"></canvas>
+                </div>
+            </div>
+
+            <!-- 작물별 비교 분석 -->
+            <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">🔍 작물별 수익성 비교</h3>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="text-center p-4 border-2 border-green-200 rounded-lg bg-green-50">
+                        <i class="fas fa-seedling text-3xl text-green-600 mb-3"></i>
+                        <h4 class="text-lg font-semibold text-gray-800">완숙토마토</h4>
+                        <p class="text-2xl font-bold text-green-600 mt-2">8,820만원</p>
+                        <p class="text-sm text-gray-600 mt-1">㎡당 3,600원</p>
+                        <div class="mt-3">
+                            <div class="bg-green-200 rounded-full h-2">
+                                <div class="bg-green-600 h-2 rounded-full progress-bar" style="width: 92%"></div>
+                            </div>
+                            <p class="text-xs text-gray-600 mt-1">수익성: 92%</p>
+                        </div>
+                    </div>
+                    <div class="text-center p-4 border-2 border-red-200 rounded-lg bg-red-50">
+                        <i class="fas fa-strawberry text-3xl text-red-600 mb-3"></i>
+                        <h4 class="text-lg font-semibold text-gray-800">딸기</h4>
+                        <p class="text-2xl font-bold text-red-600 mt-2">7,350만원</p>
+                        <p class="text-sm text-gray-600 mt-1">㎡당 3,000원</p>
+                        <div class="mt-3">
+                            <div class="bg-red-200 rounded-full h-2">
+                                <div class="bg-red-600 h-2 rounded-full progress-bar" style="width: 76%"></div>
+                            </div>
+                            <p class="text-xs text-gray-600 mt-1">수익성: 76%</p>
+                        </div>
+                    </div>
+                    <div class="text-center p-4 border-2 border-yellow-200 rounded-lg bg-yellow-50">
+                        <i class="fas fa-pepper-hot text-3xl text-yellow-600 mb-3"></i>
+                        <h4 class="text-lg font-semibold text-gray-800">파프리카</h4>
+                        <p class="text-2xl font-bold text-yellow-600 mt-2">6,890만원</p>
+                        <p class="text-sm text-gray-600 mt-1">㎡당 2,800원</p>
+                        <div class="mt-3">
+                            <div class="bg-yellow-200 rounded-full h-2">
+                                <div class="bg-yellow-600 h-2 rounded-full progress-bar" style="width: 72%"></div>
+                            </div>
+                            <p class="text-xs text-gray-600 mt-1">수익성: 72%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 생육 단계별 관리 포인트 -->
+            <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">🌱 생육 단계별 관리 포인트</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center p-4 bg-blue-50 rounded-lg">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                            <span class="text-blue-600 font-bold">1</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800">생육 초기 (1-4주)</h4>
+                            <p class="text-gray-600">온도 24-26°C 유지, 습도 70-80%, 일사량 관리 중점</p>
+                        </div>
+                        <div class="text-blue-600 font-semibold">현재 단계</div>
+                    </div>
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg opacity-60">
+                        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mr-4">
+                            <span class="text-gray-600 font-bold">2</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800">생육 중기 (5-12주)</h4>
+                            <p class="text-gray-600">수분 관리 강화, EC 2.0-2.5 유지, 화방 관리</p>
+                        </div>
+                        <div class="text-gray-600 font-semibold">다음 단계</div>
+                    </div>
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg opacity-60">
+                        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mr-4">
+                            <span class="text-gray-600 font-bold">3</span>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800">생육 말기 (13주 이후)</h4>
+                            <p class="text-gray-600">수확량 최적화, 품질 관리, 수확 타이밍</p>
+                        </div>
+                        <div class="text-gray-600 font-semibold">예정</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 실행 가능한 개선 제안 -->
+            <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-8">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">💡 맞춤형 개선 제안</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-lg p-6 border-l-4 border-green-500">
+                        <h4 class="font-semibold text-gray-800 mb-2">🎯 즉시 실행 가능</h4>
+                        <ul class="space-y-2 text-gray-600">
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>야간 온도를 2°C 낮춰 품질 개선</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>급액 EC를 2.2로 조정하여 수량 증대</li>
+                            <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>CO2 농도 1000ppm 유지로 광합성 효율 향상</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white rounded-lg p-6 border-l-4 border-blue-500">
+                        <h4 class="font-semibold text-gray-800 mb-2">📈 중장기 개선안</h4>
+                        <ul class="space-y-2 text-gray-600">
+                            <li class="flex items-center"><i class="fas fa-arrow-up text-blue-500 mr-2"></i>자동 환경제어 시스템 도입 (+12% 수익)</li>
+                            <li class="flex items-center"><i class="fas fa-arrow-up text-blue-500 mr-2"></i>LED 보광등 설치로 연중 생산 (+20% 수량)</li>
+                            <li class="flex items-center"><i class="fas fa-arrow-up text-blue-500 mr-2"></i>양액 자동화로 인건비 절감 (-15% 비용)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 위험 요소 및 대응 방안 -->
+        <section id="risk-section" class="mb-12 hidden">
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">⚠️ 위험 요소 및 대응 방안</h3>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="border-l-4 border-yellow-500 pl-4">
+                        <h4 class="font-semibold text-yellow-700 mb-2">기상 위험</h4>
+                        <p class="text-gray-600 text-sm mb-3">폭염, 한파, 태풍 등 기상 이변</p>
+                        <div class="bg-yellow-50 p-3 rounded">
+                            <p class="text-xs text-yellow-800">🛡️ 보온/차광막 자동화, 재해보험 가입</p>
+                        </div>
+                    </div>
+                    <div class="border-l-4 border-red-500 pl-4">
+                        <h4 class="font-semibold text-red-700 mb-2">병해충 위험</h4>
+                        <p class="text-gray-600 text-sm mb-3">바이러스, 곰팡이, 해충 발생</p>
+                        <div class="bg-red-50 p-3 rounded">
+                            <p class="text-xs text-red-800">🛡️ 방제 시스템, 생물학적 방제제 활용</p>
+                        </div>
+                    </div>
+                    <div class="border-l-4 border-blue-500 pl-4">
+                        <h4 class="font-semibold text-blue-700 mb-2">시장 위험</h4>
+                        <p class="text-gray-600 text-sm mb-3">가격 변동, 수급 불균형</p>
+                        <div class="bg-blue-50 p-3 rounded">
+                            <p class="text-xs text-blue-800">🛡️ 계약재배, 다품종 재배로 위험 분산</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-6 text-center">
+            <p class="text-gray-400">© 2024 스마트팜 작물 재배 전략 분석 도구. 데이터 기반 농업으로 더 나은 미래를 만들어갑니다.</p>
+        </div>
+    </footer>
+
+    <script>
+        let selectedScenario = '';
+        let yieldChart, environmentChart;
+
+        // 시나리오 선택 함수
+        function selectScenario(scenario) {
+            selectedScenario = scenario;
+            document.getElementById('input-section').classList.remove('hidden');
+            
+            // 선택된 카드 하이라이트
+            document.querySelectorAll('.scenario-card').forEach(card => {
+                card.classList.remove('border-blue-400', 'bg-blue-50');
+            });
+            event.target.closest('.scenario-card').classList.add('border-blue-400', 'bg-blue-50');
+            
+            // 시나리오별 맞춤 설정
+            updateScenarioSettings(scenario);
+            
+            // 부드럽게 스크롤
+            document.getElementById('input-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 시나리오별 설정 업데이트
+        function updateScenarioSettings(scenario) {
+            const cropSelect = document.getElementById('crop');
+            const facilitySelect = document.getElementById('facility');
+            
+            if (scenario === 'new') {
+                // 신규 농장은 수익성 높은 작물 우선 추천
+                cropSelect.innerHTML = `
+                    <option value="tomato">완숙토마토 (추천)</option>
+                    <option value="strawberry">딸기</option>
+                    <option value="paprika">파프리카</option>
+                `;
+            } else if (scenario === 'optimize') {
+                // 기존 농장 최적화는 모든 옵션 제공
+                cropSelect.innerHTML = `
+                    <option value="tomato">완숙토마토</option>
+                    <option value="strawberry">딸기</option>
+                    <option value="paprika">파프리카</option>
+                    <option value="lettuce">상추</option>
+                `;
+            } else if (scenario === 'compare') {
+                // 비교 분석은 주요 작물 위주
+                cropSelect.innerHTML = `
+                    <option value="tomato">완숙토마토</option>
+                    <option value="strawberry">딸기</option>
+                    <option value="paprika">파프리카</option>
+                `;
+            }
+        }
+
+        // 분석 실행 함수
+        function runAnalysis() {
+            // 로딩 효과
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>분석 중...';
+            button.disabled = true;
+
+            // 실제로는 서버에서 데이터를 가져와야 하지만, 여기서는 시뮬레이션
+            setTimeout(() => {
+                showDashboard();
+                button.innerHTML = originalText;
+                button.disabled = false;
+                
+                // 대시보드로 스크롤
+                document.getElementById('dashboard').scrollIntoView({ behavior: 'smooth' });
+            }, 2000);
+        }
+
+        // 대시보드 표시 함수
+        function showDashboard() {
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('risk-section').classList.remove('hidden');
+            
+            // 데이터 업데이트
+            updateMetrics();
+            createCharts();
+        }
+
+        // 지표 업데이트
+        function updateMetrics() {
+            const crop = document.getElementById('crop').value;
+            const facility = document.getElementById('facility').value;
+            const season = document.getElementById('season').value;
+            
+            // 작물별 기본 수치 (실제로는 API에서 가져와야 함)
+            const cropData = {
+                tomato: { yield: 2450, profit: 8820, base: 3600 },
+                strawberry: { yield: 1890, profit: 7350, base: 3000 },
+                paprika: { yield: 2100, profit: 6890, base: 2800 },
+                lettuce: { yield: 3200, profit: 4500, base: 2200 }
+            };
+            
+            // 시설별 보정 계수
+            const facilityMultiplier = {
+                vinyl: 1.0,
+                glass: 1.25,
+                connected: 1.15,
+                single: 0.95
+            };
+            
+            const data = cropData[crop];
+            const multiplier = facilityMultiplier[facility];
+            
+            document.getElementById('yield-metric').textContent = 
+                Math.round(data.yield * multiplier).toLocaleString() + 'kg';
+            document.getElementById('profit-metric').textContent = 
+                Math.round(data.profit * multiplier).toLocaleString() + '만원';
+        }
+
+        // 차트 생성
+        function createCharts() {
+            // 수확량 차트
+            const yieldCtx = document.getElementById('yieldChart');
+            if (yieldChart) yieldChart.destroy();
+            
+            yieldChart = new Chart(yieldCtx, {
+                type: 'line',
+                data: {
+                    labels: ['8월', '9월', '10월', '11월', '12월', '1월', '2월', '3월'],
+                    datasets: [{
+                        label: '월별 수확량 (kg)',
+                        data: [180, 320, 420, 380, 340, 290, 250, 220],
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + 'kg';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 환경 조건 차트
+            const envCtx = document.getElementById('environmentChart');
+            if (environmentChart) environmentChart.destroy();
+            
+            environmentChart = new Chart(envCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['온도', '습도', '일사량', 'CO2', '급액량', 'EC'],
+                    datasets: [{
+                        label: '현재 수준',
+                        data: [92, 88, 95, 85, 90, 87],
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#3B82F6'
+                    }, {
+                        label: '최적 수준',
+                        data: [100, 100, 100, 100, 100, 100],
+                        borderColor: '#EF4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointBackgroundColor: '#EF4444'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 분석 업데이트 (입력값 변경시)
+        function updateAnalysis() {
+            if (document.getElementById('dashboard').classList.contains('hidden')) return;
+            
+            updateMetrics();
+            createCharts();
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            // 애니메이션 효과
+            setTimeout(() => {
+                document.querySelectorAll('.progress-bar').forEach(bar => {
+                    bar.style.width = bar.style.width;
+                });
+            }, 1000);
+        });
+
+        // 페이지 스크롤 시 네비게이션 효과
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('header');
+            if (window.scrollY > 100) {
+                header.style.transform = 'translateY(-10px)';
+                header.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.1)';
+            } else {
+                header.style.transform = 'translateY(0)';
+                header.style.boxShadow = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
